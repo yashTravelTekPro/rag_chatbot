@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+faiss-cpu
+sentence-transformers
+groq
+requests
+nltk
+numpy
+pytest
+pytest-asyncio
+hypothesis
+python-dotenv
+pypdf
