@@ -1,0 +1,63 @@
+Part 1 Revised AI Pipeline Architecture
+The main problem is not just cost. The real issue is that everything is happening in the same way, at the same time, and you cannot see what is going on inside. Also, you are using a very powerful model everywhere even when it is not needed.
+
+Model selection per channel
+
+For WhatsApp on Day 1, you should use GPT 4o mini instead of GPT 4o. A WhatsApp message is short and simple. It just needs to greet the person, use their name, and mention the product. It does not need deep thinking. GPT 4o mini is much cheaper, almost 15 to 17 times cheaper. The quality will drop a little, maybe around 5 to 8 percent, but that is mostly style. The message will still be good enough.
+For Email on Day 2, you can also use GPT 4o mini. Emails are a bit longer but still simple. If you are worried about quality, you can test it. Send 90 percent emails with mini and 10 percent with GPT 4o for two weeks and compare replies. Most likely, there will not be much difference.
+For Voice script on Day 3, keep GPT 4o. This part is more complex. The script should sound natural, handle objections, and fit the industry. But here is an important idea. You do not need a new script for every lead. Scripts are mostly the same for similar industries and products. For example, a script for logistics software will be similar for many leads. Only name and company change later.
+
+Async vs sync
+
+WhatsApp and Email should not run instantly. They should run in the background.
+When a lead comes, just add it to a queue. A worker can take 50 leads together, create prompts, and send one request to the LLM. This saves a lot of time and cost. Nobody is waiting for these messages, so speed is not important here.
+Voice is a bit different because the script is needed before the call. But you can solve this by generating the script 30 minutes before the call. So it also becomes a background task instead of a real time delay.
+
+Fallback handling
+
+Every LLM call should have a timeout of 8 seconds. If it fails, retry once.
+If it still fails, use a ready made template from your database. This template should already be approved and should look decent.
+After that, send the job to a retry queue and try again after 30 minutes. If it still fails, mark it as failed and send a daily report to the client. Do not notify them instantly for every failure.
+
+Part 2 Cost Reduction Estimates
+
+Let’s assume 200 clients and each has 1000 leads. So total 200000 leads.
+For WhatsApp, right now you use GPT 4o. That costs around 150 dollars per cycle. If you switch to GPT 4o mini, it becomes around 9 dollars. So you save about 94 percent.
+For Email, same idea. Right now it costs around 250 dollars. With mini, it becomes around 15 dollars. Again about 94 percent savings.
+For Voice, assume 30 percent leads need calls. That is 60000 calls. Each script is long and costs more. But if you reuse scripts using cache, only about 35 percent of calls need a new script. So cost drops from about 120 dollars to around 42 dollars. That is about 65 percent savings.
+Overall, total cost goes from around 520 dollars to about 66 dollars. That is around 87 percent reduction.
+
+Trade offs
+
+Mini model may sound a bit less creative. Voice scripts may feel similar for leads in the same category. If the product is very unique, cache may not work well. In that case, you can flag such leads for manual review.
+
+Part 3 Observability Setup
+
+Right now you cannot clearly see what is happening in your system. You need better tracking.
+What to log
+
+At the queue level, store job id, client id, lead id, channel, and time.
+At the LLM level, store model used, tokens used, time taken, whether cache was used, and status like success or error.
+At the delivery level, store whether message was sent or failed, provider response, and time.
+Store all this data in JSON format, not plain text.
+
+Alerts
+
+Critical alerts
+If LLM errors go above 10 percent in 5 minutes
+If delivery failures go above 15 percent
+If voice script takes too long
+If queue becomes too large
+
+Normal alerts
+If cache usage drops below 40 percent
+If cost suddenly doubles
+If one client has too many failed leads
+
+Dashboard metrics
+
+Show error rate for each channel
+Show voice script time for fast and slow cases
+Show cache usage percentage
+Show cost per hour
+Show number of failed jobs
